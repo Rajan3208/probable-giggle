@@ -137,7 +137,7 @@ function renderNews(articles) {
         <article class="news-card" onclick="openArticleModal('${article.id}')">
             <div class="news-image">
                 ${article.imageUrl 
-                    ? `<img src="${article.imageUrl}" alt="${article.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-image\\"></i>>`
+                    ? `<img src="${article.imageUrl}" alt="${article.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-image\\"></i>'">`
                     : '<i class="fas fa-image"></i>'
                 }
             </div>
