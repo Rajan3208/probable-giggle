@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "serve .",
-    "build": "cp -r . dist/ || xcopy . dist\\ /E /I",
+    "build": "mkdir -p dist && cp -r * dist/",
     "start": "serve .",
     "deploy": "vercel --prod"
   },
