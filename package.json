@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "serve .",
-    "build": "mkdir -p public && cp -r --exclude=public * public/",
+    "build": "mkdir -p public && cp -r index.html script.js styles.css sw.js vercel.json public/",
     "start": "serve .",
     "deploy": "vercel --prod"
   },
