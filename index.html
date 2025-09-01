@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily News Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="loading-spinner">
+            <i class="fas fa-newspaper"></i>
+            <p>Loading News...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-newspaper"></i>
+                    <h1>Daily News Hub</h1>
+                </div>
+                <nav class="nav">
+                    <ul>
+                        <li><a href="#" class="nav-link active" data-section="home">Home</a></li>
+                        <li><a href="#" class="nav-link" data-section="latest">Latest</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin">Admin</a></li>
+                    </ul>
+                </nav>
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Search news...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Hero Section -->
+            <section id="hero" class="hero">
+                <h2>Stay Updated with Latest News</h2>
+                <p>Get the most recent and reliable news from trusted sources</p>
+            </section>
+
+            <!-- News Grid -->
+            <section id="news-section" class="news-section">
+                <div class="section-header">
+                    <h3>Latest News</h3>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div id="newsGrid" class="news-grid">
+                    <!-- News articles will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Admin Panel (Hidden by default) -->
+            <section id="admin-panel" class="admin-panel" style="display: none;">
+                <div class="admin-header">
+                    <h3>Admin Panel</h3>
+                    <button id="addNewsBtn" class="add-btn">
+                        <i class="fas fa-plus"></i>
+                        Add News
+                    </button>
+                </div>
+                
+                <!-- Add/Edit News Form -->
+                <div id="newsForm" class="news-form" style="display: none;">
+                    <form id="articleForm">
+                        <input type="hidden" id="articleId">
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" id="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="source">Source</label>
+                            <input type="text" id="source" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="imageUrl">Image URL</label>
+                            <input type="url" id="imageUrl">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-save"></i>
+                                Save Article
+                            </button>
+                            <button type="button" id="cancelBtn" class="cancel-btn">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Admin News List -->
+                <div id="adminNewsList" class="admin-news-list">
+                    <!-- Admin news items will be loaded here -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Article Modal -->
+    <div id="articleModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="modalContent">
+                <!-- Article content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Daily News Hub. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
