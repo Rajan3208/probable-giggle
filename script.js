@@ -107,6 +107,42 @@ async function fetchNewsById(id) {
     }
 }
 
+// Image handling function
+function createImageElement(imageUrl, altText, fallbackIcon = 'fas fa-image') {
+    if (!imageUrl) {
+        return `<i class="${fallbackIcon}"></i>`;
+    }
+    
+    const imageId = 'img_' + Math.random().toString(36).substr(2, 9);
+    
+    // Return image with proper error handling
+    return `<img id="${imageId}" src="${imageUrl}" alt="${escapeHtml(altText)}" 
+            onload="handleImageLoad('${imageId}')"
+            onerror="handleImageError('${imageId}', '${fallbackIcon}')"
+            style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease;">`;
+}
+
+// Global image handling functions
+window.handleImageLoad = function(imageId) {
+    const img = document.getElementById(imageId);
+    if (img) {
+        img.style.opacity = '1';
+    }
+};
+
+window.handleImageError = function(imageId, fallbackIcon = 'fas fa-image') {
+    const img = document.getElementById(imageId);
+    if (img && img.parentElement) {
+        // Create fallback icon element
+        const iconElement = document.createElement('i');
+        iconElement.className = fallbackIcon;
+        iconElement.style.cssText = 'font-size: 3rem; color: rgba(255, 255, 255, 0.7);';
+        
+        // Replace the image with the icon
+        img.parentElement.replaceChild(iconElement, img);
+    }
+};
+
 // UI Functions
 async function loadNews() {
     showLoading();
@@ -115,7 +151,13 @@ async function loadNews() {
         renderNews(newsData);
     } catch (error) {
         console.error('Error loading news:', error);
-        newsGrid.innerHTML = '<div class="error-message">Failed to load news. Please try again.</div>';
+        newsGrid.innerHTML = `
+            <div class="error-message" style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: white;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.7;"></i>
+                <h3>Failed to load news</h3>
+                <p>Please try again later</p>
+            </div>
+        `;
     } finally {
         hideLoading();
     }
@@ -124,33 +166,39 @@ async function loadNews() {
 function renderNews(articles) {
     if (!articles || articles.length === 0) {
         newsGrid.innerHTML = `
-            <div class="no-news">
-                <i class="fas fa-newspaper"></i>
-                <h3>No news articles found</h3>
-                <p>Check back later for updates!</p>
+            <div class="no-news" style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: white;">
+                <i class="fas fa-newspaper" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.7;"></i>
+                <h3 style="margin-bottom: 1rem;">No news articles found</h3>
+                <p style="opacity: 0.8;">Check back later for updates!</p>
             </div>
         `;
         return;
     }
 
-    newsGrid.innerHTML = articles.map(article => `
-        <article class="news-card" onclick="openArticleModal('${article.id}')">
-            <div class="news-image">
-                ${article.imageUrl 
-                    ? `<img src="${article.imageUrl}" alt="${article.title}" onerror="this.parentElement.innerHTML='<i class=\\"fas fa-image\\"></i>'">`
-                    : '<i class="fas fa-image"></i>'
-                }
-            </div>
-            <div class="news-content">
-                <h3 class="news-title">${escapeHtml(article.title || 'Untitled')}</h3>
-                <p class="news-description">${escapeHtml(article.description || 'No description available.')}</p>
-                <div class="news-meta">
-                    <span class="news-source">${escapeHtml(article.source || 'Unknown Source')}</span>
-                    <span class="news-time">${formatDate(article.time || article.createdAt)}</span>
+    newsGrid.innerHTML = articles.map(article => {
+        const imageContent = createImageElement(
+            article.imageUrl, 
+            article.title || 'News Image',
+            'fas fa-newspaper'
+        );
+        
+        return `
+            <article class="news-card" onclick="openArticleModal('${article.id}')" 
+                     style="cursor: pointer; transition: all 0.3s ease;">
+                <div class="news-image">
+                    ${imageContent}
                 </div>
-            </div>
-        </article>
-    `).join('');
+                <div class="news-content">
+                    <h3 class="news-title">${escapeHtml(article.title || 'Untitled')}</h3>
+                    <p class="news-description">${escapeHtml(truncateText(article.description || 'No description available.', 150))}</p>
+                    <div class="news-meta">
+                        <span class="news-source">${escapeHtml(article.source || 'Unknown Source')}</span>
+                        <span class="news-time">${formatDate(article.time || article.createdAt)}</span>
+                    </div>
+                </div>
+            </article>
+        `;
+    }).join('');
 }
 
 function filterNews(searchTerm) {
@@ -166,6 +214,13 @@ function filterNews(searchTerm) {
     );
 
     renderNews(filteredNews);
+    
+    // Show search results count
+    if (filteredNews.length === 0) {
+        showToast(`No results found for "${searchTerm}"`, 'error');
+    } else {
+        showToast(`Found ${filteredNews.length} article${filteredNews.length !== 1 ? 's' : ''}`);
+    }
 }
 
 function switchSection(section) {
@@ -184,6 +239,12 @@ function switchSection(section) {
         case 'latest':
             newsSection.style.display = 'block';
             break;
+        case 'about':
+            // Handle about section if needed
+            break;
+        case 'contact':
+            // Handle contact section if needed
+            break;
     }
 }
 
@@ -193,25 +254,40 @@ async function openArticleModal(articleId) {
         const article = await fetchNewsById(articleId);
         
         if (article) {
+            const modalImageContent = article.imageUrl 
+                ? `<div class="modal-image">
+                     <img src="${article.imageUrl}" 
+                          alt="${escapeHtml(article.title || 'Article Image')}" 
+                          style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; margin-bottom: 1.5rem;"
+                          onerror="this.style.display='none';">
+                   </div>`
+                : '';
+            
             modalContent.innerHTML = `
                 <div class="modal-article">
-                    ${article.imageUrl ? `
-                        <div class="modal-image">
-                            <img src="${article.imageUrl}" alt="${article.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; margin-bottom: 1.5rem;">
-                        </div>
-                    ` : ''}
+                    ${modalImageContent}
                     <h2 style="color: #333; margin-bottom: 1rem; line-height: 1.3;">${escapeHtml(article.title || 'Untitled')}</h2>
-                    <div class="modal-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
+                    <div class="modal-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; flex-wrap: wrap; gap: 1rem;">
                         <span style="color: #667eea; font-weight: 500;">${escapeHtml(article.source || 'Unknown Source')}</span>
                         <span style="color: #999; font-style: italic;">${formatDate(article.time || article.createdAt)}</span>
                     </div>
                     <div class="modal-description" style="color: #555; line-height: 1.8; font-size: 1.1rem;">
                         ${escapeHtml(article.description || 'No description available.')}
                     </div>
+                    ${article.url ? `
+                        <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                            <a href="${article.url}" target="_blank" rel="noopener noreferrer" 
+                               style="display: inline-flex; align-items: center; gap: 0.5rem; color: #667eea; text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
+                                Read full article <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>
             `;
             
             articleModal.style.display = 'block';
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = 'hidden';
         }
     } catch (error) {
         showToast('Error loading article: ' + error.message, 'error');
@@ -219,6 +295,23 @@ async function openArticleModal(articleId) {
         hideLoading();
     }
 }
+
+// Enhanced close modal function
+function closeModalHandler() {
+    articleModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Update modal close events
+if (closeModal) {
+    closeModal.addEventListener('click', closeModalHandler);
+}
+
+window.addEventListener('click', (e) => {
+    if (e.target === articleModal) {
+        closeModalHandler();
+    }
+});
 
 // Utility Functions
 function showLoading() {
@@ -231,11 +324,13 @@ function hideLoading() {
     if (loadingScreen) {
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-        }, 500);
+        }, 300);
     }
 }
 
 function showToast(message, type = 'success') {
+    if (!toast) return;
+    
     toast.textContent = message;
     toast.className = `toast ${type}`;
     toast.classList.add('show');
@@ -250,17 +345,28 @@ function formatDate(dateString) {
     
     try {
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Invalid date';
+        
         const now = new Date();
         const diffTime = Math.abs(now - date);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
         
-        if (diffDays === 1) {
+        if (diffMinutes < 60) {
+            return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+        } else if (diffHours < 24) {
+            return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        } else if (diffDays === 1) {
             return 'Yesterday';
         } else if (diffDays < 7) {
             return `${diffDays} days ago`;
         } else if (diffDays < 30) {
             const weeks = Math.floor(diffDays / 7);
             return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+        } else if (diffDays < 365) {
+            const months = Math.floor(diffDays / 30);
+            return `${months} month${months > 1 ? 's' : ''} ago`;
         } else {
             return date.toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -281,23 +387,63 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Error handling for images
-document.addEventListener('error', (e) => {
-    if (e.target.tagName === 'IMG') {
-        e.target.style.display = 'none';
-        e.target.parentElement.innerHTML = '<i class="fas fa-image"></i>';
-    }
-}, true);
+function truncateText(text, maxLength = 150) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
+}
 
-// Service Worker Registration
+// Enhanced error handling for the entire application
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+    showToast('An unexpected error occurred', 'error');
+});
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise rejection:', e.reason);
+    showToast('Network error occurred', 'error');
+    e.preventDefault();
+});
+
+// Network status handling
+window.addEventListener('online', () => {
+    showToast('Connection restored');
+});
+
+window.addEventListener('offline', () => {
+    showToast('Connection lost. Some features may not work.', 'error');
+});
+
+// Service Worker Registration with enhanced error handling
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
-                console.log('SW registered: ', registration);
+                console.log('SW registered successfully:', registration);
+                
+                // Listen for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showToast('New version available! Refresh to update.');
+                        }
+                    });
+                });
             })
-            .catch((registrationError) => {
-                console.log('SW registration failed: ', registrationError);
+            .catch((error) => {
+                console.log('SW registration failed:', error);
             });
+    });
+}
+
+// Performance monitoring
+if ('performance' in window) {
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        }, 0);
     });
 }
