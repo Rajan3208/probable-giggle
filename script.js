@@ -1,11 +1,8 @@
-// API Configuration
 const API_BASE_URL = 'https://app-tqnwogs6oa-uc.a.run.app/api';
 
 // Global variables
 let newsData = [];
 let currentSection = 'home';
-let isEditing = false;
-let currentEditId = null;
 
 // DOM Elements
 const loadingScreen = document.getElementById('loading');
@@ -13,14 +10,8 @@ const newsGrid = document.getElementById('newsGrid');
 const searchInput = document.getElementById('searchInput');
 const refreshBtn = document.getElementById('refreshBtn');
 const navLinks = document.querySelectorAll('.nav-link');
-const adminPanel = document.getElementById('admin-panel');
 const newsSection = document.getElementById('news-section');
 const hero = document.getElementById('hero');
-const addNewsBtn = document.getElementById('addNewsBtn');
-const newsForm = document.getElementById('newsForm');
-const articleForm = document.getElementById('articleForm');
-const cancelBtn = document.getElementById('cancelBtn');
-const adminNewsList = document.getElementById('adminNewsList');
 const articleModal = document.getElementById('articleModal');
 const modalContent = document.getElementById('modalContent');
 const closeModal = document.querySelector('.close-modal');
@@ -62,21 +53,6 @@ function setupEventListeners() {
         showToast('News refreshed successfully!');
     });
 
-    // Admin panel buttons
-    addNewsBtn.addEventListener('click', () => {
-        showNewsForm();
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        hideNewsForm();
-    });
-
-    // Form submission
-    articleForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await handleFormSubmission();
-    });
-
     // Modal close
     closeModal.addEventListener('click', () => {
         articleModal.style.display = 'none';
@@ -92,7 +68,6 @@ function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             articleModal.style.display = 'none';
-            hideNewsForm();
         }
     });
 }
@@ -132,83 +107,12 @@ async function fetchNewsById(id) {
     }
 }
 
-async function createNews(newsData) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/news`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newsData),
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            return result;
-        } else {
-            throw new Error(result.error || 'Failed to create news');
-        }
-    } catch (error) {
-        console.error('Error creating news:', error);
-        showToast('Error creating news: ' + error.message, 'error');
-        throw error;
-    }
-}
-
-async function updateNews(id, newsData) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/news/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newsData),
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            return result;
-        } else {
-            throw new Error(result.error || 'Failed to update news');
-        }
-    } catch (error) {
-        console.error('Error updating news:', error);
-        showToast('Error updating news: ' + error.message, 'error');
-        throw error;
-    }
-}
-
-async function deleteNews(id) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/news/${id}`, {
-            method: 'DELETE',
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            return result;
-        } else {
-            throw new Error(result.error || 'Failed to delete news');
-        }
-    } catch (error) {
-        console.error('Error deleting news:', error);
-        showToast('Error deleting news: ' + error.message, 'error');
-        throw error;
-    }
-}
-
 // UI Functions
 async function loadNews() {
     showLoading();
     try {
         newsData = await fetchNews();
         renderNews(newsData);
-        if (currentSection === 'admin') {
-            renderAdminNews(newsData);
-        }
     } catch (error) {
         console.error('Error loading news:', error);
         newsGrid.innerHTML = '<div class="error-message">Failed to load news. Please try again.</div>';
@@ -249,31 +153,6 @@ function renderNews(articles) {
     `).join('');
 }
 
-function renderAdminNews(articles) {
-    if (!articles || articles.length === 0) {
-        adminNewsList.innerHTML = '<p>No news articles found.</p>';
-        return;
-    }
-
-    adminNewsList.innerHTML = articles.map(article => `
-        <div class="admin-news-item">
-            <div class="admin-news-info">
-                <h4>${escapeHtml(article.title || 'Untitled')}</h4>
-                <p>${escapeHtml(article.description ? article.description.substring(0, 100) + '...' : 'No description')}</p>
-                <small>Source: ${escapeHtml(article.source || 'Unknown')} | ${formatDate(article.time || article.createdAt)}</small>
-            </div>
-            <div class="admin-actions">
-                <button class="edit-btn" onclick="editArticle('${article.id}')">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="delete-btn" onclick="deleteArticle('${article.id}')">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
 function filterNews(searchTerm) {
     if (!searchTerm.trim()) {
         renderNews(newsData);
@@ -294,7 +173,6 @@ function switchSection(section) {
     
     // Hide all sections
     newsSection.style.display = 'none';
-    adminPanel.style.display = 'none';
     hero.style.display = 'none';
     
     // Show relevant section
@@ -305,10 +183,6 @@ function switchSection(section) {
             break;
         case 'latest':
             newsSection.style.display = 'block';
-            break;
-        case 'admin':
-            adminPanel.style.display = 'block';
-            renderAdminNews(newsData);
             break;
     }
 }
@@ -341,100 +215,6 @@ async function openArticleModal(articleId) {
         }
     } catch (error) {
         showToast('Error loading article: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function showNewsForm(article = null) {
-    isEditing = !!article;
-    currentEditId = article ? article.id : null;
-    
-    if (article) {
-        document.getElementById('articleId').value = article.id;
-        document.getElementById('title').value = article.title || '';
-        document.getElementById('description').value = article.description || '';
-        document.getElementById('source').value = article.source || '';
-        document.getElementById('imageUrl').value = article.imageUrl || '';
-        document.querySelector('.submit-btn').innerHTML = '<i class="fas fa-save"></i> Update Article';
-    } else {
-        articleForm.reset();
-        document.getElementById('articleId').value = '';
-        document.querySelector('.submit-btn').innerHTML = '<i class="fas fa-save"></i> Save Article';
-    }
-    
-    newsForm.style.display = 'block';
-    newsForm.scrollIntoView({ behavior: 'smooth' });
-}
-
-function hideNewsForm() {
-    newsForm.style.display = 'none';
-    articleForm.reset();
-    isEditing = false;
-    currentEditId = null;
-}
-
-async function handleFormSubmission() {
-    const formData = {
-        title: document.getElementById('title').value.trim(),
-        description: document.getElementById('description').value.trim(),
-        source: document.getElementById('source').value.trim(),
-        imageUrl: document.getElementById('imageUrl').value.trim(),
-        time: new Date().toISOString()
-    };
-
-    if (!formData.title || !formData.description || !formData.source) {
-        showToast('Please fill in all required fields', 'error');
-        return;
-    }
-
-    try {
-        showLoading();
-        
-        if (isEditing && currentEditId) {
-            await updateNews(currentEditId, formData);
-            showToast('Article updated successfully!');
-        } else {
-            await createNews(formData);
-            showToast('Article created successfully!');
-        }
-        
-        hideNewsForm();
-        await loadNews();
-        
-    } catch (error) {
-        console.error('Error submitting form:', error);
-    } finally {
-        hideLoading();
-    }
-}
-
-async function editArticle(articleId) {
-    try {
-        showLoading();
-        const article = await fetchNewsById(articleId);
-        if (article) {
-            showNewsForm({ ...article, id: articleId });
-        }
-    } catch (error) {
-        console.error('Error loading article for editing:', error);
-    } finally {
-        hideLoading();
-    }
-}
-
-async function deleteArticle(articleId) {
-    if (!confirm('Are you sure you want to delete this article?')) {
-        return;
-    }
-
-    try {
-        showLoading();
-        await deleteNews(articleId);
-        showToast('Article deleted successfully!');
-        await loadNews();
-    } catch (error) {
-        console.error('Error deleting article:', error);
     } finally {
         hideLoading();
     }
@@ -509,7 +289,7 @@ document.addEventListener('error', (e) => {
     }
 }, true);
 
-// Service Worker Registration (Optional - for offline functionality)
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
