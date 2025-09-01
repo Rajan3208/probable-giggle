@@ -1,0 +1,29 @@
+{
+  "name": "daily-news-hub",
+  "version": "1.0.0",
+  "description": "A modern news website built with HTML, CSS, and JavaScript",
+  "main": "index.html",
+  "scripts": {
+    "dev": "serve .",
+    "build": "cp -r . dist/ || xcopy . dist\\ /E /I",
+    "start": "serve .",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "news",
+    "website",
+    "html",
+    "css",
+    "javascript",
+    "firebase",
+    "vercel"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
